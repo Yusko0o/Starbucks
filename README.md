@@ -1,134 +1,148 @@
-# Starbucks — Un café. Votre moment.
+# Starbucks — Your Coffee. Your Moment.
 
-Projet de portfolio indépendant réalisé pour **Kilian Berardino**. Une expérience e-commerce en français inspirée de Starbucks : interface responsive, personnalisation, panier, inscription, connexion, commandes et fidélité de démonstration.
+An independent portfolio project created for **Kilian Berardino**. A French-language e-commerce experience inspired by Starbucks, featuring a responsive interface, drink customization, a shopping cart, registration, login, simulated orders, and a demo loyalty program.
 
-**Aucune affiliation avec Starbucks. Aucun paiement réel. Les prix, cafés, horaires et récompenses sont fictifs.**
+**Not affiliated with Starbucks. No real payments. Prices, cafés, opening hours, and rewards are fictional.**
 
-## Démarrer en une commande
+## Get Started with One Command
 
-Prérequis : **Node.js 24 ou version ultérieure**. Aucun paquet npm à télécharger, aucune clé API nécessaire.
+Requirement: **Node.js 24 or later**. No npm packages to download and no API keys required.
 
-Dans le dossier extrait :
+From the extracted project directory:
 
 ```bash
 node server/index.mjs
 ```
 
-Ouvrir **http://127.0.0.1:3000** dans le navigateur. `npm start` est équivalent. Ne pas ouvrir directement `public/index.html` : l’interface utilise l’API du serveur.
+Open **http://127.0.0.1:3000** in your browser. You can also use `npm start`. Do not open `public/index.html` directly: the interface relies on the server API.
 
 ```bash
-npm run dev   # redémarrage du serveur lors des modifications
-npm test      # tests de l’API et de la base de données
+npm run dev   # Restart the server automatically when files change
+npm test      # Run API and database tests
 ```
 
-Sous Windows, si PowerShell bloque `npm.ps1`, utiliser `npm.cmd start` / `npm.cmd test`, ou les commandes Node directement :
+On Windows, if PowerShell blocks `npm.ps1`, use `npm.cmd start` / `npm.cmd test`, or run Node directly:
 
 ```powershell
 node --watch server/index.mjs
 node --test tests/api.test.mjs
 ```
 
-## Fonctionnalités
+## Features
 
-- Accueil avec campagne automne, produits favoris, fidélité et section éditoriale.
-- Catalogue de dix produits, recherche et six catégories.
-- Personnalisation : Tall, Grande, Venti, quatre laits, shot supplémentaire et quantité.
-- Panier persistant sur le navigateur, modification des quantités, retrait d’articles.
-- Trois cafés fictifs, sélection du retrait et plan illustratif.
-- Inscription, connexion et déconnexion avec cookie de session HttpOnly.
-- Commandes persistantes en SQLite, historique personnel et étoiles calculées depuis les commandes.
-- Calcul des montants côté serveur en centimes : le navigateur ne peut pas imposer ses prix.
-- Pages histoire, présentation du projet et confidentialité.
-- Navigation au clavier, focus visible, modales avec gestion du focus, réduction des animations.
+- Homepage with an autumn campaign, featured products, loyalty program, and editorial section.
+- Ten-product catalog with search and six category filters.
+- Customization: Tall, Grande, Venti, four milk options, an extra espresso shot, and quantity.
+- Persistent browser cart with quantity updates and item removal.
+- Three fictional cafés, pickup location selection, and an illustrative map.
+- Registration, login, and logout using an HttpOnly session cookie.
+- Persistent SQLite orders, personal order history, and Stars calculated from orders.
+- Server-side price calculations in cents: the browser cannot override product prices.
+- Coffee story, project information, and privacy pages.
+- Keyboard navigation, visible focus indicators, focus-managed dialogs, and reduced-motion support.
 
-## Essayer le parcours
+## Try the Complete Flow
 
-1. Ouvrir le menu et personnaliser un produit.
-2. Ajouter au panier et choisir un café fictif.
-3. Cliquer sur « Se connecter pour commander », puis créer un compte de test (e-mail de test, mot de passe dédié d’au moins dix caractères).
-4. Valider la commande de démonstration.
-5. Consulter l’historique et le solde d’étoiles dans le compte.
+1. Open the menu and customize a product.
+2. Add it to your cart and select a fictional café.
+3. Click “Se connecter pour commander” (“Sign in to order”), then create a test account using a test email address and a dedicated password of at least ten characters.
+4. Confirm your demo order.
+5. View your order history and Stars balance in your account.
 
-Aucun compte préchargé, aucun mot de passe de démonstration partagé. Les données se créent lors de l’utilisation.
+No accounts are preloaded, and no shared demo passwords are provided. Data is created as you use the application.
 
-## Structure
+## Project Structure
 
-| Fichier | Rôle |
+| File | Purpose |
 | --- | --- |
-| `public/index.html` | Point d’entrée accessible et métadonnées |
-| `public/app.js` | Navigation, rendu des pages, panier et appels API |
-| `public/components.js` | Icônes, illustrations SVG et fonctions de présentation |
-| `public/style.css` | Design responsive, modales, panier et états interactifs |
-| `server/index.mjs` | Serveur HTTP Node.js, fichiers statiques et en-têtes |
-| `server/api.mjs` | Authentification et logique métier |
-| `server/catalog.mjs` | Catalogue, prix et cafés fictifs |
-| `server/database.mjs` | Adaptateur SQLite natif de Node.js |
-| `server/schema.sql` | Tables et index de la base |
-| `tests/api.test.mjs` | Tests métier, sécurité et persistance |
+| `public/index.html` | Accessible entry point and metadata |
+| `public/app.js` | Navigation, page rendering, cart management, and API calls |
+| `public/components.js` | Icons, SVG illustrations, and presentation helpers |
+| `public/style.css` | Responsive styling, dialogs, cart, and interactive states |
+| `server/index.mjs` | Node.js HTTP server, static files, and response headers |
+| `server/api.mjs` | Authentication and business logic |
+| `server/catalog.mjs` | Product catalog, prices, and fictional cafés |
+| `server/database.mjs` | Adapter for Node.js’s built-in SQLite module |
+| `server/schema.sql` | Database tables and indexes |
+| `tests/api.test.mjs` | Business logic, security, and persistence tests |
 
-Les données sont conservées dans `data/coffee.sqlite`, créé automatiquement. Ce dossier est exclu de Git et de l’archive livrée. Arrêter le serveur avant toute sauvegarde ou suppression de la base.
+Data is stored in `data/coffee.sqlite`, which is created automatically. This directory is excluded from Git and the delivered archive. Stop the server before backing up or deleting the database.
 
 ## API
 
-| Méthode | Route | Usage |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | État du service |
-| GET | `/api/catalog` | Produits, options et cafés |
-| POST | `/api/auth/register` | Inscription : name, email, password |
-| POST | `/api/auth/login` | Connexion : email, password |
-| POST | `/api/auth/logout` | Déconnexion |
-| GET | `/api/me` | Profil et étoiles, ou user: null |
-| GET | `/api/orders` | Historique du compte connecté |
-| POST | `/api/orders` | Création d’une commande simulée |
+| GET | `/api/health` | Service health |
+| GET | `/api/catalog` | Products, customization options, and cafés |
+| POST | `/api/auth/register` | Registration: name, email, password |
+| POST | `/api/auth/login` | Login: email, password |
+| POST | `/api/auth/logout` | Logout |
+| GET | `/api/me` | Profile and Stars, or `user: null` |
+| GET | `/api/orders` | Current user’s order history |
+| POST | `/api/orders` | Create a simulated order |
 
-Exemple de corps pour une commande :
+Example order request body:
 
 ```json
 {
   "store": "centre",
   "items": [
-    {"id":"pumpkin","size":"Grande","milk":"Avoine","extra":true,"quantity":1}
+    {
+      "id": "pumpkin",
+      "size": "Grande",
+      "milk": "Avoine",
+      "extra": true,
+      "quantity": 1
+    }
   ]
 }
 ```
 
-## Choix techniques et sécurité
+API values such as `"Avoine"` remain in French to match the application’s catalog.
 
-- JavaScript natif organisé en modules ES : aucun téléchargement nécessaire pour exécuter le projet.
-- Node.js HTTP et SQLite natif, requêtes paramétrées.
-- PBKDF2-SHA-256 avec sel aléatoire, 100 000 itérations ; aucune conservation du mot de passe en clair.
-- Jetons de session aléatoires, hachés dans la base, durée de sept jours. Cookie HttpOnly, SameSite=Lax, Secure lorsque l’origine est HTTPS.
-- Vérification de l’origine pour les écritures, limitation des tentatives de connexion, validation des choix et quantités.
-- Historique filtré par l’utilisateur connecté, contenu utilisateur échappé à l’affichage, CSP et en-tête nosniff.
+## Technical Choices and Security
 
-Projet de démonstration, pas une plateforme commerciale : pas de paiement, de stock, d’envoi d’e-mails, de validation d’e-mail ou de récupération de mot de passe. Le programme d’étoiles ne distribue aucune récompense. Un lancement commercial nécessiterait notamment une revue de sécurité, une politique de conservation et des mécanismes de gestion des comptes.
+- Vanilla JavaScript organized into ES modules: no dependencies to download.
+- Node.js HTTP server and built-in SQLite with parameterized queries.
+- PBKDF2-SHA-256 password hashing with a random salt and 100,000 iterations; passwords are never stored in plain text.
+- Random session tokens stored as hashes in the database, with a seven-day lifetime. Cookies use HttpOnly, SameSite=Lax, and Secure when the origin is HTTPS.
+- Origin checks for write requests, authentication rate limiting, and validation of customization options and quantities.
+- Order history restricted to the authenticated user, escaped user content, a Content Security Policy, and the `nosniff` header.
 
-## Hébergement Node.js
+This is a demonstration project, not a commercial platform. It does not include payments, inventory management, email delivery, email verification, or password recovery. The Stars program does not provide actual rewards. A commercial launch would require additional work, including a security review, a data retention policy, and account management features.
 
-Compatible avec un hébergement qui exécute Node.js 24+ et fournit un disque persistant. Conserver `data/` sur ce disque. Un hébergement uniquement statique ne peut pas exécuter cette API. Une seule instance Node est prévue pour ce projet SQLite.
+## Node.js Hosting
 
-Variables d’environnement disponibles :
+Use a hosting environment that supports Node.js 24+ and persistent storage. Keep the `data/` directory on that persistent storage. Static-only hosting cannot run this API. This SQLite project is designed for a single Node.js instance.
 
-| Variable | Valeur par défaut | Usage |
+Available environment variables:
+
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `PORT` | `3000` | Port d’écoute |
-| `HOST` | `127.0.0.1` | Utiliser `0.0.0.0` sur un hébergeur qui le demande |
-| `DATABASE_PATH` | `data/coffee.sqlite` | Emplacement persistant de SQLite |
-| `PUBLIC_ORIGIN` | Origine HTTP locale | Origine HTTPS exacte derrière un reverse proxy |
+| `PORT` | `3000` | Listening port |
+| `HOST` | `127.0.0.1` | Set to `0.0.0.0` when required by your hosting provider |
+| `DATABASE_PATH` | `data/coffee.sqlite` | Persistent SQLite database location |
+| `PUBLIC_ORIGIN` | Local HTTP origin | Exact HTTPS origin when running behind a reverse proxy |
 
-Définir `PUBLIC_ORIGIN=https://votre-domaine.example` derrière un proxy HTTPS pour les cookies Secure et la vérification d’origine. Ne pas exposer le serveur directement sur Internet sans HTTPS.
+Set `PUBLIC_ORIGIN=https://your-domain.example` behind an HTTPS proxy to enable Secure cookies and correct origin checks. Do not expose the server directly to the Internet without HTTPS.
 
-## Crédits et visuels
+## Credits and Visual Assets
 
-Design et code réalisés pour le portfolio de Kilian Berardino. Les marques Starbucks restent la propriété de leurs titulaires. Photographies de campagne chargées depuis les sources publiques suivantes ; elles nécessitent une connexion et peuvent changer :
+Design and code created for Kilian Berardino’s portfolio. Starbucks trademarks remain the property of their respective owners. Campaign photographs are loaded from the following public sources; they require an Internet connection and may change:
 
-- https://www.starbucks.com/ — campagne automne et photographie « Free refills ».
-- https://cloudassets.starbucks.com/ — domaine de diffusion des photographies.
+- https://www.starbucks.com/ — Autumn campaign and “Free refills” photography.
+- https://cloudassets.starbucks.com/ — Image delivery domain.
 
-Les illustrations de produits sont des SVG intégrés créés pour ce projet, et ne sont pas des photos contractuelles. Une alternative visuelle est prévue si les grandes photographies ne se chargent pas. Les polices système fonctionnent hors ligne.
+Product illustrations are embedded SVGs created for this project and are not official product photographs. A visual fallback is provided if the large photographs fail to load. System fonts work offline.
 
-## Vérification de cette livraison
+## Verification
 
-Tests automatisés exécutables avec `node --test tests/api.test.mjs` : authentification, recalcul des prix, isolation des comptes, rejet des entrées invalides, contrôle d’origine, limitation des tentatives, cookies HTTPS et persistance après réouverture de SQLite.
+Run the automated tests with:
 
-L’environnement de création a empêché les connexions réseau locales du navigateur et la publication distante. Le serveur démarre, la logique API a été testée directement avec de vraies Request/Response et SQLite ; la validation visuelle dans le navigateur reste à effectuer sur votre machine.
+```bash
+node --test tests/api.test.mjs
+```
+
+Tests cover authentication, server-side price calculations, account isolation, invalid input rejection, origin checks, rate limiting, HTTPS cookies, and persistence after reopening the SQLite database.
+
+The development environment blocked local browser network connections and remote deployment. The server starts successfully, and the API logic was tested directly using real Request/Response objects and SQLite. Visual verification in a browser still needs to be performed on your machine.
