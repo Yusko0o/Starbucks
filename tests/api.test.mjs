@@ -1,24 +1,292 @@
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';
-import path from 'node:path';
-import {openDatabase} from '../server/database.mjs';
-import {handleApi} from '../server/api.mjs';
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { openDatabase } from "../server/database.mjs";
+import { handleApi } from "../server/api.mjs";
 
-function client(db){return async(route,{method='GET',body,cookie,origin}={})=>{
- const headers={'content-type':'application/json'};if(cookie)headers.cookie=cookie;if(origin)headers.origin=origin;
- const response=await handleApi(new Request('http://localhost:3000/api'+route,{method,headers,...(body!==undefined?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}),db);
- return {status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0],headers:response.headers};
-};}
-async function register(call,email='portfolio@example.test'){return call('/auth/register',{method:'POST',body:{email,name:'Portfolio Test',password:'Dedicated-test-password-42!'}});}
-const item={id:'pumpkin',size:'Grande',milk:'Avoine',extra:true,quantity:2,unit:1};
+function client(db) {
+  return async (route, { method = "GET", body, cookie, origin } = {}) => {
+    const headers = { "content-type": "application/json" };
+    if (cookie) headers.cookie = cookie;
+    if (origin) headers.origin = origin;
+    const response = await handleApi(
+      new Request("http://localhost:3000/api" + route, {
+        method,
+        headers,
+        ...(body !== undefined
+          ? { body: typeof body === "string" ? body : JSON.stringify(body) }
+          : {}),
+      }),
+      db,
+    );
+    return {
+      status: response.status,
+      data: await response.json(),
+      cookie: response.headers.get("set-cookie")?.split(";")[0],
+      headers: response.headers,
+    };
+  };
+}
+async function register(call, email = "portfolio@example.test") {
+  return call("/auth/register", {
+    method: "POST",
+    body: {
+      email,
+      name: "Portfolio Test",
+      password: "Dedicated-test-password-42!",
+    },
+  });
+}
+const item = {
+  id: "pumpkin",
+  size: "Grande",
+  milk: "Avoine",
+  extra: true,
+  quantity: 2,
+  unit: 1,
+};
 
-test('catalogue disponible sans authentification',async()=>{const db=openDatabase(':memory:');try{const r=await client(db)('/catalog');assert.equal(r.status,200);assert.equal(r.data.products.length,10);assert.equal(r.data.stores.length,3);}finally{db.close();}});
-test('inscription, session HttpOnly, connexion et déconnexion',async()=>{const db=openDatabase(':memory:');try{const call=client(db);const a=await register(call);assert.equal(a.status,200);assert.match(a.headers.get('set-cookie'),/HttpOnly; SameSite=Lax/);const stored=await db.prepare('SELECT password FROM users WHERE email=?').bind('portfolio@example.test').first();assert.ok(!stored.password.includes('Dedicated-test'));assert.equal((await call('/me',{cookie:a.cookie})).data.user.name,'Portfolio Test');assert.equal((await call('/auth/login',{method:'POST',body:{email:'portfolio@example.test',password:'wrong-password-123'}})).status,401);const b=await call('/auth/login',{method:'POST',body:{email:'portfolio@example.test',password:'Dedicated-test-password-42!'}});assert.equal(b.status,200);await call('/auth/logout',{method:'POST',cookie:b.cookie});assert.equal((await call('/me',{cookie:b.cookie})).data.user,null);}finally{db.close();}});
-test('prix recalculés au serveur, historique et étoiles',async()=>{const db=openDatabase(':memory:');try{const call=client(db);const a=await register(call);const r=await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[item],store:'centre',total:1}});assert.equal(r.status,201);assert.equal(r.data.order.total,1560);assert.equal(r.data.order.items[0].unit,780);assert.equal((await call('/orders',{cookie:a.cookie})).data.orders.length,1);assert.equal((await call('/me',{cookie:a.cookie})).data.user.stars,15);}finally{db.close();}});
-test('commandes privées et authentification requise',async()=>{const db=openDatabase(':memory:');try{const call=client(db);const a=await register(call,'alice@example.test');const b=await register(call,'bob@example.test');await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[item],store:'centre'}});assert.equal((await call('/orders')).status,401);assert.equal((await call('/orders',{method:'POST',body:{items:[item],store:'centre'}})).status,401);assert.equal((await call('/orders',{cookie:b.cookie})).data.orders.length,0);}finally{db.close();}});
-test('rejet des requêtes cross-origin et données incorrectes',async()=>{const db=openDatabase(':memory:');try{const call=client(db);const a=await register(call);for(const bad of [{...item,quantity:-1},{...item,id:'unknown'},{...item,size:'XXL'},{...item,milk:'invalide'}]){assert.equal((await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[bad],store:'centre'}})).status,400);}assert.equal((await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[item],store:'unknown'}})).status,400);assert.equal((await call('/orders',{method:'POST',cookie:a.cookie,origin:'https://evil.example',body:{items:[item],store:'centre'}})).status,403);assert.equal((await call('/orders',{method:'POST',cookie:a.cookie,body:'invalid json'})).status,400);}finally{db.close();}});
-test('persistance des commandes après réouverture SQLite',async()=>{const folder=mkdtempSync(path.join(tmpdir(),'coffee-test-'));const file=path.join(folder,'db.sqlite');let db=openDatabase(file);const call=client(db);const a=await register(call);await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[item],store:'centre'}});db.close();db=openDatabase(file);try{assert.equal((await client(db)('/orders',{cookie:a.cookie})).data.orders.length,1);}finally{db.close();}});
-test('limitation des tentatives et protection des cookies HTTPS',async()=>{const db=openDatabase(':memory:');try{const call=client(db);for(let i=0;i<12;i++)await call('/auth/login',{method:'POST',body:{email:'unknown@example.test',password:'invalid-test-password'}});assert.equal((await call('/auth/login',{method:'POST',body:{email:'unknown@example.test',password:'invalid-test-password'}})).status,429);const response=await handleApi(new Request('https://coffee.example/api/auth/register',{method:'POST',body:JSON.stringify({name:'Secure Test',email:'secure@example.test',password:'dedicated-test-password'})}),db);assert.match(response.headers.get('set-cookie'),/; Secure/);}finally{db.close();}});
-test('les gourmandises ignorent les suppléments de boisson',async()=>{const db=openDatabase(':memory:');try{const call=client(db);const a=await register(call);const r=await call('/orders',{method:'POST',cookie:a.cookie,body:{items:[{...item,id:'croissant',quantity:1}],store:'centre'}});assert.equal(r.data.order.total,290);assert.equal(r.data.order.items[0].size,'Pièce');}finally{db.close();}});
+test("catalogue disponible sans authentification", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const r = await client(db)("/catalog");
+    assert.equal(r.status, 200);
+    assert.equal(r.data.products.length, 10);
+    assert.equal(r.data.stores.length, 3);
+  } finally {
+    db.close();
+  }
+});
+test("inscription, session HttpOnly, connexion et déconnexion", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    const a = await register(call);
+    assert.equal(a.status, 200);
+    assert.match(a.headers.get("set-cookie"), /HttpOnly; SameSite=Lax/);
+    const stored = await db
+      .prepare("SELECT password FROM users WHERE email=?")
+      .bind("portfolio@example.test")
+      .first();
+    assert.ok(!stored.password.includes("Dedicated-test"));
+    assert.equal(
+      (await call("/me", { cookie: a.cookie })).data.user.name,
+      "Portfolio Test",
+    );
+    assert.equal(
+      (
+        await call("/auth/login", {
+          method: "POST",
+          body: {
+            email: "portfolio@example.test",
+            password: "wrong-password-123",
+          },
+        })
+      ).status,
+      401,
+    );
+    const b = await call("/auth/login", {
+      method: "POST",
+      body: {
+        email: "portfolio@example.test",
+        password: "Dedicated-test-password-42!",
+      },
+    });
+    assert.equal(b.status, 200);
+    await call("/auth/logout", { method: "POST", cookie: b.cookie });
+    assert.equal((await call("/me", { cookie: b.cookie })).data.user, null);
+  } finally {
+    db.close();
+  }
+});
+test("prix recalculés au serveur, historique et étoiles", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    const a = await register(call);
+    const r = await call("/orders", {
+      method: "POST",
+      cookie: a.cookie,
+      body: { items: [item], store: "centre", total: 1 },
+    });
+    assert.equal(r.status, 201);
+    assert.equal(r.data.order.total, 1560);
+    assert.equal(r.data.order.items[0].unit, 780);
+    assert.equal(
+      (await call("/orders", { cookie: a.cookie })).data.orders.length,
+      1,
+    );
+    assert.equal((await call("/me", { cookie: a.cookie })).data.user.stars, 15);
+  } finally {
+    db.close();
+  }
+});
+test("commandes privées et authentification requise", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    const a = await register(call, "alice@example.test");
+    const b = await register(call, "bob@example.test");
+    await call("/orders", {
+      method: "POST",
+      cookie: a.cookie,
+      body: { items: [item], store: "centre" },
+    });
+    assert.equal((await call("/orders")).status, 401);
+    assert.equal(
+      (
+        await call("/orders", {
+          method: "POST",
+          body: { items: [item], store: "centre" },
+        })
+      ).status,
+      401,
+    );
+    assert.equal(
+      (await call("/orders", { cookie: b.cookie })).data.orders.length,
+      0,
+    );
+  } finally {
+    db.close();
+  }
+});
+test("rejet des requêtes cross-origin et données incorrectes", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    const a = await register(call);
+    for (const bad of [
+      { ...item, quantity: -1 },
+      { ...item, id: "unknown" },
+      { ...item, size: "XXL" },
+      { ...item, milk: "invalide" },
+    ]) {
+      assert.equal(
+        (
+          await call("/orders", {
+            method: "POST",
+            cookie: a.cookie,
+            body: { items: [bad], store: "centre" },
+          })
+        ).status,
+        400,
+      );
+    }
+    assert.equal(
+      (
+        await call("/orders", {
+          method: "POST",
+          cookie: a.cookie,
+          body: { items: [item], store: "unknown" },
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await call("/orders", {
+          method: "POST",
+          cookie: a.cookie,
+          origin: "https://evil.example",
+          body: { items: [item], store: "centre" },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await call("/orders", {
+          method: "POST",
+          cookie: a.cookie,
+          body: "invalid json",
+        })
+      ).status,
+      400,
+    );
+  } finally {
+    db.close();
+  }
+});
+test("persistance des commandes après réouverture SQLite", async () => {
+  const folder = mkdtempSync(path.join(tmpdir(), "coffee-test-"));
+  const file = path.join(folder, "db.sqlite");
+  let db = openDatabase(file);
+  const call = client(db);
+  const a = await register(call);
+  await call("/orders", {
+    method: "POST",
+    cookie: a.cookie,
+    body: { items: [item], store: "centre" },
+  });
+  db.close();
+  db = openDatabase(file);
+  try {
+    assert.equal(
+      (await client(db)("/orders", { cookie: a.cookie })).data.orders.length,
+      1,
+    );
+  } finally {
+    db.close();
+  }
+});
+test("limitation des tentatives et protection des cookies HTTPS", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    for (let i = 0; i < 12; i++)
+      await call("/auth/login", {
+        method: "POST",
+        body: {
+          email: "unknown@example.test",
+          password: "invalid-test-password",
+        },
+      });
+    assert.equal(
+      (
+        await call("/auth/login", {
+          method: "POST",
+          body: {
+            email: "unknown@example.test",
+            password: "invalid-test-password",
+          },
+        })
+      ).status,
+      429,
+    );
+    const response = await handleApi(
+      new Request("https://coffee.example/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Secure Test",
+          email: "secure@example.test",
+          password: "dedicated-test-password",
+        }),
+      }),
+      db,
+    );
+    assert.match(response.headers.get("set-cookie"), /; Secure/);
+  } finally {
+    db.close();
+  }
+});
+test("les gourmandises ignorent les suppléments de boisson", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const call = client(db);
+    const a = await register(call);
+    const r = await call("/orders", {
+      method: "POST",
+      cookie: a.cookie,
+      body: {
+        items: [{ ...item, id: "croissant", quantity: 1 }],
+        store: "centre",
+      },
+    });
+    assert.equal(r.data.order.total, 290);
+    assert.equal(r.data.order.items[0].size, "Pièce");
+  } finally {
+    db.close();
+  }
+});

@@ -53,6 +53,7 @@ No accounts are preloaded, and no shared demo passwords are provided. Data is cr
 
 ## Project Structure
 
+<<<<<<< HEAD
 | File | Purpose |
 | --- | --- |
 | `public/index.html` | Accessible entry point and metadata |
@@ -65,11 +66,26 @@ No accounts are preloaded, and no shared demo passwords are provided. Data is cr
 | `server/database.mjs` | Adapter for Node.js’s built-in SQLite module |
 | `server/schema.sql` | Database tables and indexes |
 | `tests/api.test.mjs` | Business logic, security, and persistence tests |
+=======
+| Fichier                | Rôle                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| `public/index.html`    | Point d’entrée accessible et métadonnées                |
+| `public/app.js`        | Navigation, rendu des pages, panier et appels API       |
+| `public/components.js` | Icônes, illustrations SVG et fonctions de présentation  |
+| `public/style.css`     | Design responsive, modales, panier et états interactifs |
+| `server/index.mjs`     | Serveur HTTP Node.js, fichiers statiques et en-têtes    |
+| `server/api.mjs`       | Authentification et logique métier                      |
+| `server/catalog.mjs`   | Catalogue, prix et cafés fictifs                        |
+| `server/database.mjs`  | Adaptateur SQLite natif de Node.js                      |
+| `server/schema.sql`    | Tables et index de la base                              |
+| `tests/api.test.mjs`   | Tests métier, sécurité et persistance                   |
+>>>>>>> e97b7dd (fixed bugs)
 
 Data is stored in `data/coffee.sqlite`, which is created automatically. This directory is excluded from Git and the delivered archive. Stop the server before backing up or deleting the database.
 
 ## API
 
+<<<<<<< HEAD
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Service health |
@@ -80,6 +96,18 @@ Data is stored in `data/coffee.sqlite`, which is created automatically. This dir
 | GET | `/api/me` | Profile and Stars, or `user: null` |
 | GET | `/api/orders` | Current user’s order history |
 | POST | `/api/orders` | Create a simulated order |
+=======
+| Méthode | Route                | Usage                               |
+| ------- | -------------------- | ----------------------------------- |
+| GET     | `/api/health`        | État du service                     |
+| GET     | `/api/catalog`       | Produits, options et cafés          |
+| POST    | `/api/auth/register` | Inscription : name, email, password |
+| POST    | `/api/auth/login`    | Connexion : email, password         |
+| POST    | `/api/auth/logout`   | Déconnexion                         |
+| GET     | `/api/me`            | Profil et étoiles, ou user: null    |
+| GET     | `/api/orders`        | Historique du compte connecté       |
+| POST    | `/api/orders`        | Création d’une commande simulée     |
+>>>>>>> e97b7dd (fixed bugs)
 
 Example order request body:
 
@@ -115,6 +143,7 @@ This is a demonstration project, not a commercial platform. It does not include 
 
 Use a hosting environment that supports Node.js 24+ and persistent storage. Keep the `data/` directory on that persistent storage. Static-only hosting cannot run this API. This SQLite project is designed for a single Node.js instance.
 
+<<<<<<< HEAD
 Available environment variables:
 
 | Variable | Default | Purpose |
@@ -123,6 +152,14 @@ Available environment variables:
 | `HOST` | `127.0.0.1` | Set to `0.0.0.0` when required by your hosting provider |
 | `DATABASE_PATH` | `data/coffee.sqlite` | Persistent SQLite database location |
 | `PUBLIC_ORIGIN` | Local HTTP origin | Exact HTTPS origin when running behind a reverse proxy |
+=======
+| Variable        | Valeur par défaut    | Usage                                              |
+| --------------- | -------------------- | -------------------------------------------------- |
+| `PORT`          | `3000`               | Port d’écoute                                      |
+| `HOST`          | `127.0.0.1`          | Utiliser `0.0.0.0` sur un hébergeur qui le demande |
+| `DATABASE_PATH` | `data/coffee.sqlite` | Emplacement persistant de SQLite                   |
+| `PUBLIC_ORIGIN` | Origine HTTP locale  | Origine HTTPS exacte derrière un reverse proxy     |
+>>>>>>> e97b7dd (fixed bugs)
 
 Set `PUBLIC_ORIGIN=https://your-domain.example` behind an HTTPS proxy to enable Secure cookies and correct origin checks. Do not expose the server directly to the Internet without HTTPS.
 
